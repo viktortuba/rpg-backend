@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
-import { Character } from './Character';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { DuelLog } from './DuelLog';
 
 export enum DuelStatus {
@@ -18,19 +17,54 @@ export class Duel {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Character, (character) => character.duelsAsChallenger1)
-  @JoinColumn({ name: 'challenger1Id' })
-  challenger1: Character;
-
   @Column()
   challenger1Id: string;
 
-  @ManyToOne(() => Character, (character) => character.duelsAsChallenger2)
-  @JoinColumn({ name: 'challenger2Id' })
-  challenger2: Character;
-
   @Column()
   challenger2Id: string;
+
+  // Character snapshot data (cached at duel creation)
+  @Column({ type: 'varchar' })
+  challenger1Name: string;
+
+  @Column({ type: 'varchar' })
+  challenger2Name: string;
+
+  @Column({ type: 'varchar' })
+  challenger1CreatedBy: string;
+
+  @Column({ type: 'varchar' })
+  challenger2CreatedBy: string;
+
+  @Column({ type: 'integer' })
+  challenger1MaxHealth: number;
+
+  @Column({ type: 'integer' })
+  challenger2MaxHealth: number;
+
+  @Column({ type: 'integer' })
+  challenger1TotalStrength: number;
+
+  @Column({ type: 'integer' })
+  challenger2TotalStrength: number;
+
+  @Column({ type: 'integer' })
+  challenger1TotalAgility: number;
+
+  @Column({ type: 'integer' })
+  challenger2TotalAgility: number;
+
+  @Column({ type: 'integer' })
+  challenger1TotalIntelligence: number;
+
+  @Column({ type: 'integer' })
+  challenger2TotalIntelligence: number;
+
+  @Column({ type: 'integer' })
+  challenger1TotalFaith: number;
+
+  @Column({ type: 'integer' })
+  challenger2TotalFaith: number;
 
   @Column({
     type: 'enum',
@@ -39,10 +73,10 @@ export class Duel {
   })
   currentTurn: DuelTurn;
 
-  @Column()
+  @Column({ type: 'integer' })
   challenger1Health: number;
 
-  @Column()
+  @Column({ type: 'integer' })
   challenger2Health: number;
 
   @Column({ type: 'timestamp', nullable: true })
@@ -70,7 +104,7 @@ export class Duel {
   })
   status: DuelStatus;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   winnerId: string | null;
 
   @Column({ type: 'timestamp' })

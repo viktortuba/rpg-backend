@@ -28,13 +28,13 @@ export class DuelLog {
   })
   action: CombatAction;
 
-  @Column({ nullable: true })
+  @Column({ type: 'integer', nullable: true })
   damage: number | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'integer', nullable: true })
   healing: number | null;
 
-  @Column()
+  @Column({ type: 'integer' })
   targetHealth: number;
 
   @Column({ type: 'timestamp' })

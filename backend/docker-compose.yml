@@ -11,39 +11,70 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-  account-service:
-    build: ./services/account-service
-    ports:
-      - "3001:3000"
-    env_file: .env
-    depends_on:
-      - postgres
-    command: npm run dev
-
-  character-service:
-    build: ./services/character-service
-    ports:
-      - "3002:3000"
-    env_file: .env
-    depends_on:
-      - postgres
-      - redis
-    command: npm run dev
-
-  combat-service:
-    build: ./services/combat-service
-    ports:
-      - "3003:3000"
-    env_file: .env
-    depends_on:
-      - postgres
-    command: npm run dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  account-service:
+    build:
+      context: .
+      dockerfile: ./services/account-service/Dockerfile
+    ports:
+      - "3001:3000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npm run dev
+    volumes:
+      - ./services/account-service/src:/app/src
+      - ./shared:/app/../shared
+
+  character-service:
+    build:
+      context: .
+      dockerfile: ./services/character-service/Dockerfile
+    ports:
+      - "3002:3000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: npm run dev
+    volumes:
+      - ./services/character-service/src:/app/src
+      - ./shared:/app/../shared
+
+  combat-service:
+    build:
+      context: .
+      dockerfile: ./services/combat-service/Dockerfile
+    ports:
+      - "3003:3000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      character-service:
+        condition: service_started
+    command: npm run dev
+    volumes:
+      - ./services/combat-service/src:/app/src
+      - ./shared:/app/../shared
 
 volumes:
   postgres_data:

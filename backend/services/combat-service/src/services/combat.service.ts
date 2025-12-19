@@ -1,16 +1,14 @@
 import { AppDataSource } from '../data-source';
 import { Duel, DuelStatus, DuelTurn } from '../entities/Duel';
-import { Character } from '../entities/Character';
 import { CombatAction } from '../entities/DuelLog';
-import { CharacterSyncService } from './character-sync.service';
+import { CharacterClientService } from './character-sync.service';
 import { DuelLogService } from './duel-log.service';
-import { DuelResponseDto, CharacterInDuelDto, UserRole } from '../types';
+import { DuelResponseDto, CharacterSyncDto } from '../types';
 import { characterServiceClient, retryWithBackoff } from '../config/http-client';
 
 export class CombatService {
   private duelRepository = AppDataSource.getRepository(Duel);
-  private characterRepository = AppDataSource.getRepository(Character);
-  private characterSyncService = new CharacterSyncService();
+  private characterClient = new CharacterClientService();
   private duelLogService = new DuelLogService();
 
   async createDuel(
@@ -22,9 +20,9 @@ export class CombatService {
   ): Promise<DuelResponseDto> {
     console.log(`Creating duel between ${challenger1Id} and ${challenger2Id}`);
 
-    // Sync both characters to get fresh data
-    const char1 = await this.characterSyncService.syncCharacter(challenger1Id, authToken);
-    const char2 = await this.characterSyncService.syncCharacter(challenger2Id, authToken);
+    // Fetch both characters from Character Service
+    const char1 = await this.characterClient.getCharacter(challenger1Id, authToken);
+    const char2 = await this.characterClient.getCharacter(challenger2Id, authToken);
 
     // Validate user owns challenger1 (unless game master)
     if (!isGameMaster && char1.createdBy !== userId) {
@@ -45,10 +43,26 @@ export class CombatService {
       throw new Error('One or both characters are already in an active duel');
     }
 
-    // Create duel
+    // Create duel with character snapshot data
     const duel = this.duelRepository.create({
       challenger1Id,
       challenger2Id,
+      // Cache character data at duel creation
+      challenger1Name: char1.name,
+      challenger2Name: char2.name,
+      challenger1CreatedBy: char1.createdBy,
+      challenger2CreatedBy: char2.createdBy,
+      challenger1MaxHealth: char1.health,
+      challenger2MaxHealth: char2.health,
+      challenger1TotalStrength: char1.totalStrength,
+      challenger2TotalStrength: char2.totalStrength,
+      challenger1TotalAgility: char1.totalAgility,
+      challenger2TotalAgility: char2.totalAgility,
+      challenger1TotalIntelligence: char1.totalIntelligence,
+      challenger2TotalIntelligence: char2.totalIntelligence,
+      challenger1TotalFaith: char1.totalFaith,
+      challenger2TotalFaith: char2.totalFaith,
+      // Combat state
       currentTurn: DuelTurn.CHALLENGER_1,
       challenger1Health: char1.health,
       challenger2Health: char2.health,
@@ -70,25 +84,26 @@ export class CombatService {
     return this.buildDuelResponse(savedDuel, char1, char2);
   }
 
-  async performAttack(duelId: string, userId: string, isGameMaster: boolean): Promise<any> {
-    const duel = await this.getDuelWithCharacters(duelId);
+  async performAttack(duelId: string, userId: string, isGameMaster: boolean, authToken: string): Promise<any> {
+    const duel = await this.getDuel(duelId);
     this.validateDuelActive(duel);
     this.checkTimeout(duel);
 
-    const { attacker, defender, isChallenger1 } = this.validateTurn(duel, userId, isGameMaster);
+    // Use cached character data from duel
+    const { attacker, defender, isChallenger1 } = this.validateTurnCached(duel, userId, isGameMaster);
 
     // Attack has no cooldown
-    const damage = attacker.strength + attacker.agility;
+    const damage = attacker.totalStrength + attacker.totalAgility;
     const newDefenderHealth = Math.max(0, this.getDefenderHealth(duel, isChallenger1) - damage);
 
     this.setDefenderHealth(duel, isChallenger1, newDefenderHealth);
     this.setLastAction(duel, isChallenger1, new Date());
 
     // Log action
-    await this.duelLogService.logAction(duelId, attacker.id, CombatAction.ATTACK, newDefenderHealth, damage);
+    await this.duelLogService.logAction(duelId, attacker.characterId, CombatAction.ATTACK, newDefenderHealth, damage);
 
     // Check win condition
-    const winResult = await this.checkWinCondition(duel);
+    const winResult = await this.checkWinConditionCached(duel);
     if (winResult) {
       return {
         action: CombatAction.ATTACK,
@@ -110,16 +125,17 @@ export class CombatService {
       target: defender.name,
       damage,
       message: `${attacker.name} attacks ${defender.name} for ${damage} damage!`,
-      duel: this.buildDuelResponse(duel, duel.challenger1, duel.challenger2),
+      duel: this.buildDuelResponseCached(duel),
     };
   }
 
-  async performCast(duelId: string, userId: string, isGameMaster: boolean): Promise<any> {
-    const duel = await this.getDuelWithCharacters(duelId);
+  async performCast(duelId: string, userId: string, isGameMaster: boolean, authToken: string): Promise<any> {
+    const duel = await this.getDuel(duelId);
     this.validateDuelActive(duel);
     this.checkTimeout(duel);
 
-    const { attacker, defender, isChallenger1 } = this.validateTurn(duel, userId, isGameMaster);
+    // Use cached character data from duel
+    const { attacker, defender, isChallenger1 } = this.validateTurnCached(duel, userId, isGameMaster);
 
     // Check cast cooldown (2 seconds)
     const lastCast = isChallenger1 ? duel.challenger1LastCast : duel.challenger2LastCast;
@@ -128,7 +144,7 @@ export class CombatService {
       throw new Error(`Cast is on cooldown. ${remaining.toFixed(1)} seconds remaining.`);
     }
 
-    const damage = 2 * attacker.intelligence;
+    const damage = 2 * attacker.totalIntelligence;
     const newDefenderHealth = Math.max(0, this.getDefenderHealth(duel, isChallenger1) - damage);
 
     this.setDefenderHealth(duel, isChallenger1, newDefenderHealth);
@@ -136,10 +152,10 @@ export class CombatService {
     this.setLastCast(duel, isChallenger1, new Date());
 
     // Log action
-    await this.duelLogService.logAction(duelId, attacker.id, CombatAction.CAST, newDefenderHealth, damage);
+    await this.duelLogService.logAction(duelId, attacker.characterId, CombatAction.CAST, newDefenderHealth, damage);
 
     // Check win condition
-    const winResult = await this.checkWinCondition(duel);
+    const winResult = await this.checkWinConditionCached(duel);
     if (winResult) {
       return {
         action: CombatAction.CAST,
@@ -161,16 +177,17 @@ export class CombatService {
       target: defender.name,
       damage,
       message: `${attacker.name} casts a spell on ${defender.name} for ${damage} damage!`,
-      duel: this.buildDuelResponse(duel, duel.challenger1, duel.challenger2),
+      duel: this.buildDuelResponseCached(duel),
     };
   }
 
-  async performHeal(duelId: string, userId: string, isGameMaster: boolean): Promise<any> {
-    const duel = await this.getDuelWithCharacters(duelId);
+  async performHeal(duelId: string, userId: string, isGameMaster: boolean, authToken: string): Promise<any> {
+    const duel = await this.getDuel(duelId);
     this.validateDuelActive(duel);
     this.checkTimeout(duel);
 
-    const { attacker, defender, isChallenger1 } = this.validateTurn(duel, userId, isGameMaster);
+    // Use cached character data from duel
+    const { attacker, defender, isChallenger1 } = this.validateTurnCached(duel, userId, isGameMaster);
 
     // Check heal cooldown (2 seconds)
     const lastHeal = isChallenger1 ? duel.challenger1LastHeal : duel.challenger2LastHeal;
@@ -179,7 +196,7 @@ export class CombatService {
       throw new Error(`Heal is on cooldown. ${remaining.toFixed(1)} seconds remaining.`);
     }
 
-    const healing = attacker.faith;
+    const healing = attacker.totalFaith;
     const currentHealth = isChallenger1 ? duel.challenger1Health : duel.challenger2Health;
     const maxHealth = attacker.health;
     const newHealth = Math.min(maxHealth, currentHealth + healing);
@@ -195,7 +212,7 @@ export class CombatService {
     this.setLastHeal(duel, isChallenger1, new Date());
 
     // Log action
-    await this.duelLogService.logAction(duelId, attacker.id, CombatAction.HEAL, newHealth, undefined, actualHealing);
+    await this.duelLogService.logAction(duelId, attacker.characterId, CombatAction.HEAL, newHealth, undefined, actualHealing);
 
     // Switch turn (healing doesn't end the duel)
     this.switchTurn(duel);
@@ -206,27 +223,26 @@ export class CombatService {
       actor: attacker.name,
       healing: actualHealing,
       message: `${attacker.name} heals for ${actualHealing} health!`,
-      duel: this.buildDuelResponse(duel, duel.challenger1, duel.challenger2),
+      duel: this.buildDuelResponseCached(duel),
     };
   }
 
-  async getDuel(duelId: string, userId: string, isGameMaster: boolean): Promise<DuelResponseDto> {
-    const duel = await this.getDuelWithCharacters(duelId);
+  async getDuelStatus(duelId: string, userId: string, isGameMaster: boolean, authToken: string): Promise<DuelResponseDto> {
+    const duel = await this.getDuel(duelId);
 
-    // Check authorization
-    if (!isGameMaster && duel.challenger1.createdBy !== userId && duel.challenger2.createdBy !== userId) {
+    // Check authorization using cached data
+    if (!isGameMaster && duel.challenger1CreatedBy !== userId && duel.challenger2CreatedBy !== userId) {
       throw new Error('You can only view duels involving your characters');
     }
 
-    return this.buildDuelResponse(duel, duel.challenger1, duel.challenger2);
+    return this.buildDuelResponseCached(duel);
   }
 
   // Helper methods
 
-  private async getDuelWithCharacters(duelId: string): Promise<Duel> {
+  private async getDuel(duelId: string): Promise<Duel> {
     const duel = await this.duelRepository.findOne({
       where: { id: duelId },
-      relations: ['challenger1', 'challenger2'],
     });
 
     if (!duel) {
@@ -255,10 +271,10 @@ export class CombatService {
     }
   }
 
-  private validateTurn(duel: Duel, userId: string, isGameMaster: boolean) {
+  private validateTurn(duel: Duel, char1: CharacterSyncDto, char2: CharacterSyncDto, userId: string, isGameMaster: boolean) {
     const isChallenger1Turn = duel.currentTurn === DuelTurn.CHALLENGER_1;
-    const currentCharacter = isChallenger1Turn ? duel.challenger1 : duel.challenger2;
-    const otherCharacter = isChallenger1Turn ? duel.challenger2 : duel.challenger1;
+    const currentCharacter = isChallenger1Turn ? char1 : char2;
+    const otherCharacter = isChallenger1Turn ? char2 : char1;
 
     if (!isGameMaster && currentCharacter.createdBy !== userId) {
       throw new Error('It is not your turn');
@@ -267,6 +283,63 @@ export class CombatService {
     return {
       attacker: currentCharacter,
       defender: otherCharacter,
+      isChallenger1: isChallenger1Turn,
+    };
+  }
+
+  private validateTurnCached(duel: Duel, userId: string, isGameMaster: boolean) {
+    const isChallenger1Turn = duel.currentTurn === DuelTurn.CHALLENGER_1;
+
+    // Check authorization using cached createdBy
+    const currentCreatedBy = isChallenger1Turn ? duel.challenger1CreatedBy : duel.challenger2CreatedBy;
+    if (!isGameMaster && currentCreatedBy !== userId) {
+      throw new Error('It is not your turn');
+    }
+
+    // Build attacker and defender from cached data
+    const attacker = isChallenger1Turn ? {
+      characterId: duel.challenger1Id,
+      name: duel.challenger1Name,
+      createdBy: duel.challenger1CreatedBy,
+      health: duel.challenger1MaxHealth,
+      totalStrength: duel.challenger1TotalStrength,
+      totalAgility: duel.challenger1TotalAgility,
+      totalIntelligence: duel.challenger1TotalIntelligence,
+      totalFaith: duel.challenger1TotalFaith,
+    } : {
+      characterId: duel.challenger2Id,
+      name: duel.challenger2Name,
+      createdBy: duel.challenger2CreatedBy,
+      health: duel.challenger2MaxHealth,
+      totalStrength: duel.challenger2TotalStrength,
+      totalAgility: duel.challenger2TotalAgility,
+      totalIntelligence: duel.challenger2TotalIntelligence,
+      totalFaith: duel.challenger2TotalFaith,
+    };
+
+    const defender = isChallenger1Turn ? {
+      characterId: duel.challenger2Id,
+      name: duel.challenger2Name,
+      createdBy: duel.challenger2CreatedBy,
+      health: duel.challenger2MaxHealth,
+      totalStrength: duel.challenger2TotalStrength,
+      totalAgility: duel.challenger2TotalAgility,
+      totalIntelligence: duel.challenger2TotalIntelligence,
+      totalFaith: duel.challenger2TotalFaith,
+    } : {
+      characterId: duel.challenger1Id,
+      name: duel.challenger1Name,
+      createdBy: duel.challenger1CreatedBy,
+      health: duel.challenger1MaxHealth,
+      totalStrength: duel.challenger1TotalStrength,
+      totalAgility: duel.challenger1TotalAgility,
+      totalIntelligence: duel.challenger1TotalIntelligence,
+      totalFaith: duel.challenger1TotalFaith,
+    };
+
+    return {
+      attacker,
+      defender,
       isChallenger1: isChallenger1Turn,
     };
   }
@@ -328,19 +401,19 @@ export class CombatService {
       duel.currentTurn === DuelTurn.CHALLENGER_1 ? DuelTurn.CHALLENGER_2 : DuelTurn.CHALLENGER_1;
   }
 
-  private async checkWinCondition(duel: Duel): Promise<any | null> {
+  private async checkWinCondition(duel: Duel, char1: CharacterSyncDto, char2: CharacterSyncDto): Promise<any | null> {
     if (duel.challenger1Health <= 0) {
-      return await this.completeDuel(duel, duel.challenger2Id, 'health');
+      return await this.completeDuel(duel, duel.challenger2Id, char1, char2, 'health');
     }
 
     if (duel.challenger2Health <= 0) {
-      return await this.completeDuel(duel, duel.challenger1Id, 'health');
+      return await this.completeDuel(duel, duel.challenger1Id, char1, char2, 'health');
     }
 
     return null;
   }
 
-  private async completeDuel(duel: Duel, winnerId: string, reason: string): Promise<any> {
+  private async completeDuel(duel: Duel, winnerId: string, char1: CharacterSyncDto, char2: CharacterSyncDto, reason: string): Promise<any> {
     console.log(`Duel ${duel.id} completed. Winner: ${winnerId} (Reason: ${reason})`);
 
     duel.status = DuelStatus.COMPLETED;
@@ -349,6 +422,7 @@ export class CombatService {
     await this.duelRepository.save(duel);
 
     const loserId = winnerId === duel.challenger1Id ? duel.challenger2Id : duel.challenger1Id;
+    const winnerName = winnerId === duel.challenger1Id ? char1.name : char2.name;
 
     // Transfer random item (fire and forget, log errors)
     this.transferRandomItem(winnerId, loserId).catch((error) => {
@@ -356,9 +430,9 @@ export class CombatService {
     });
 
     return {
-      duel: this.buildDuelResponse(duel, duel.challenger1, duel.challenger2),
-      winner: winnerId === duel.challenger1Id ? duel.challenger1.name : duel.challenger2.name,
-      message: `${winnerId === duel.challenger1Id ? duel.challenger1.name : duel.challenger2.name} wins the duel!`,
+      duel: this.buildDuelResponse(duel, char1, char2),
+      winner: winnerName,
+      message: `${winnerName} wins the duel!`,
     };
   }
 
@@ -397,7 +471,7 @@ export class CombatService {
     }
   }
 
-  private buildDuelResponse(duel: Duel, char1: Character, char2: Character): DuelResponseDto {
+  private buildDuelResponse(duel: Duel, char1: CharacterSyncDto, char2: CharacterSyncDto): DuelResponseDto {
     return {
       id: duel.id,
       challenger1: {
@@ -417,6 +491,64 @@ export class CombatService {
       winnerId: duel.winnerId || undefined,
       startedAt: duel.startedAt,
       endedAt: duel.endedAt || undefined,
+    };
+  }
+
+  private buildDuelResponseCached(duel: Duel): DuelResponseDto {
+    return {
+      id: duel.id,
+      challenger1: {
+        id: duel.challenger1Id,
+        name: duel.challenger1Name,
+        currentHealth: duel.challenger1Health,
+        maxHealth: duel.challenger1MaxHealth,
+      },
+      challenger2: {
+        id: duel.challenger2Id,
+        name: duel.challenger2Name,
+        currentHealth: duel.challenger2Health,
+        maxHealth: duel.challenger2MaxHealth,
+      },
+      currentTurn: duel.currentTurn,
+      status: duel.status,
+      winnerId: duel.winnerId || undefined,
+      startedAt: duel.startedAt,
+      endedAt: duel.endedAt || undefined,
+    };
+  }
+
+  private async checkWinConditionCached(duel: Duel): Promise<any | null> {
+    if (duel.challenger1Health <= 0) {
+      return await this.completeDuelCached(duel, duel.challenger2Id, 'health');
+    }
+
+    if (duel.challenger2Health <= 0) {
+      return await this.completeDuelCached(duel, duel.challenger1Id, 'health');
+    }
+
+    return null;
+  }
+
+  private async completeDuelCached(duel: Duel, winnerId: string, reason: string): Promise<any> {
+    console.log(`Duel ${duel.id} completed. Winner: ${winnerId} (Reason: ${reason})`);
+
+    duel.status = DuelStatus.COMPLETED;
+    duel.winnerId = winnerId;
+    duel.endedAt = new Date();
+    await this.duelRepository.save(duel);
+
+    const loserId = winnerId === duel.challenger1Id ? duel.challenger2Id : duel.challenger1Id;
+    const winnerName = winnerId === duel.challenger1Id ? duel.challenger1Name : duel.challenger2Name;
+
+    // Transfer random item (fire and forget, log errors)
+    this.transferRandomItem(winnerId, loserId).catch((error) => {
+      console.error(`Failed to transfer item after duel ${duel.id}:`, error.message);
+    });
+
+    return {
+      duel: this.buildDuelResponseCached(duel),
+      winner: winnerName,
+      message: `${winnerName} wins the duel!`,
     };
   }
 }

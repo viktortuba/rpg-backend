@@ -9,6 +9,8 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "skipLibCheck": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "isolatedModules": true
   }
 }

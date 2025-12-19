@@ -1,7 +1,7 @@
 import { UserRole } from '../entities/User';
 
 // Re-export shared types
-export { JwtPayload } from '@rpg-backend/shared';
+export type { JwtPayload } from '@rpg-backend/shared';
 
 export interface RegisterDto {
   username: string;

@@ -57,10 +57,7 @@ export class CharacterService {
     if (cached) {
       const character = JSON.parse(cached) as CharacterDetailDto;
 
-      // Check permissions
-      if (!isGameMaster && character.createdBy !== userId) {
-        throw new Error('Forbidden: You can only view your own characters');
-      }
+      // Any authenticated user can view character details (for PvP visibility)
 
       return character;
     }

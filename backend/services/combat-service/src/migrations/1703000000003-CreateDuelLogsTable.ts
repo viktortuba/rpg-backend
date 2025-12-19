@@ -11,7 +11,7 @@ export class CreateDuelLogsTable1703000000003 implements MigrationInterface {
             type: 'uuid',
             isPrimary: true,
             generationStrategy: 'uuid',
-            default: 'combat_schema.uuid_generate_v4()',
+            default: 'uuid_generate_v4()',
           },
           {
             name: 'duelId',

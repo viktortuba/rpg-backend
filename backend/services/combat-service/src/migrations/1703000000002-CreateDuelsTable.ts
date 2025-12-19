@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
 export class CreateDuelsTable1703000000002 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -11,7 +11,7 @@ export class CreateDuelsTable1703000000002 implements MigrationInterface {
             type: 'uuid',
             isPrimary: true,
             generationStrategy: 'uuid',
-            default: 'combat_schema.uuid_generate_v4()',
+            default: 'uuid_generate_v4()',
           },
           {
             name: 'challenger1Id',
@@ -100,28 +100,7 @@ export class CreateDuelsTable1703000000002 implements MigrationInterface {
       true
     );
 
-    // Add foreign keys
-    await queryRunner.createForeignKey(
-      'combat_schema.duels',
-      new TableForeignKey({
-        columnNames: ['challenger1Id'],
-        referencedSchema: 'combat_schema',
-        referencedTableName: 'characters',
-        referencedColumnNames: ['id'],
-        onDelete: 'RESTRICT',
-      })
-    );
-
-    await queryRunner.createForeignKey(
-      'combat_schema.duels',
-      new TableForeignKey({
-        columnNames: ['challenger2Id'],
-        referencedSchema: 'combat_schema',
-        referencedTableName: 'characters',
-        referencedColumnNames: ['id'],
-        onDelete: 'RESTRICT',
-      })
-    );
+    // No foreign keys - character IDs are from Character Service
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

@@ -2,7 +2,8 @@ import { DuelStatus, DuelTurn } from '../entities/Duel';
 import { CombatAction } from '../entities/DuelLog';
 
 // Re-export shared types
-export { UserRole, JwtPayload } from '@rpg-backend/shared';
+export { UserRole } from '@rpg-backend/shared';
+export type { JwtPayload } from '@rpg-backend/shared';
 
 // Character DTOs
 export interface CharacterSyncDto {

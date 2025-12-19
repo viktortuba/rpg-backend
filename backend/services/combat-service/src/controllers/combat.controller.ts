@@ -40,7 +40,7 @@ export class CombatController {
       ) {
         return res.status(400).json({ error: error.message });
       }
-      if (error.message.includes('Failed to sync character')) {
+      if (error.message.includes('Failed to fetch character')) {
         return res.status(503).json({ error: 'Character Service unavailable' });
       }
       next(error);
@@ -52,8 +52,9 @@ export class CombatController {
       const { duel_id } = req.params;
       const userId = req.user!.userId;
       const isGameMaster = req.user!.role === UserRole.GAME_MASTER;
+      const authToken = req.headers.authorization?.substring(7) || '';
 
-      const result = await this.combatService.performAttack(duel_id, userId, isGameMaster);
+      const result = await this.combatService.performAttack(duel_id, userId, isGameMaster, authToken);
 
       return res.status(200).json(result);
     } catch (error: any) {
@@ -76,8 +77,9 @@ export class CombatController {
       const { duel_id } = req.params;
       const userId = req.user!.userId;
       const isGameMaster = req.user!.role === UserRole.GAME_MASTER;
+      const authToken = req.headers.authorization?.substring(7) || '';
 
-      const result = await this.combatService.performCast(duel_id, userId, isGameMaster);
+      const result = await this.combatService.performCast(duel_id, userId, isGameMaster, authToken);
 
       return res.status(200).json(result);
     } catch (error: any) {
@@ -101,8 +103,9 @@ export class CombatController {
       const { duel_id } = req.params;
       const userId = req.user!.userId;
       const isGameMaster = req.user!.role === UserRole.GAME_MASTER;
+      const authToken = req.headers.authorization?.substring(7) || '';
 
-      const result = await this.combatService.performHeal(duel_id, userId, isGameMaster);
+      const result = await this.combatService.performHeal(duel_id, userId, isGameMaster, authToken);
 
       return res.status(200).json(result);
     } catch (error: any) {
@@ -126,8 +129,9 @@ export class CombatController {
       const { duel_id } = req.params;
       const userId = req.user!.userId;
       const isGameMaster = req.user!.role === UserRole.GAME_MASTER;
+      const authToken = req.headers.authorization?.substring(7) || '';
 
-      const duel = await this.combatService.getDuel(duel_id, userId, isGameMaster);
+      const duel = await this.combatService.getDuelStatus(duel_id, userId, isGameMaster, authToken);
 
       return res.status(200).json(duel);
     } catch (error: any) {
