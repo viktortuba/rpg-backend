@@ -1,0 +1,705 @@
+{
+	"info": {
+		"_postman_id": "rpg-backend-collection",
+		"name": "RPG Backend API",
+		"description": "Complete API collection for RPG Backend microservices (Account, Character, Combat)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Account Service",
+			"item": [
+				{
+					"name": "Register User 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set(\"user1_token\", jsonData.token);",
+									"    pm.environment.set(\"user1_id\", jsonData.user.id);",
+									"    console.log(\"User 1 Token saved:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"player1\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{account_service_url}}/api/account/register",
+							"host": [
+								"{{account_service_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set(\"user2_token\", jsonData.token);",
+									"    pm.environment.set(\"user2_id\", jsonData.user.id);",
+									"    console.log(\"User 2 Token saved:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"player2\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{account_service_url}}/api/account/register",
+							"host": [
+								"{{account_service_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Game Master",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set(\"gm_token\", jsonData.token);",
+									"    pm.environment.set(\"gm_id\", jsonData.user.id);",
+									"    console.log(\"GM Token saved:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"gamemaster\",\n  \"password\": \"password123\",\n  \"role\": \"GameMaster\"\n}"
+						},
+						"url": {
+							"raw": "{{account_service_url}}/api/account/register",
+							"host": [
+								"{{account_service_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login User 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set(\"user1_token\", jsonData.token);",
+									"    pm.environment.set(\"user1_id\", jsonData.user.id);",
+									"    console.log(\"User 1 Token saved:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"player1\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{account_service_url}}/api/account/login",
+							"host": [
+								"{{account_service_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set(\"user2_token\", jsonData.token);",
+									"    pm.environment.set(\"user2_id\", jsonData.user.id);",
+									"    console.log(\"User 2 Token saved:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"player2\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{account_service_url}}/api/account/login",
+							"host": [
+								"{{account_service_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Character Service",
+			"item": [
+				{
+					"name": "Get All Classes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.length > 0) {",
+									"        const warrior = jsonData.find(c => c.name === 'Warrior');",
+									"        if (warrior) {",
+									"            pm.environment.set(\"warrior_class_id\", warrior.id);",
+									"            console.log(\"Warrior Class ID saved:\", warrior.id);",
+									"        }",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{gm_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{character_service_url}}/api/classes",
+							"host": [
+								"{{character_service_url}}"
+							],
+							"path": [
+								"api",
+								"classes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Character 1 (User 1)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set(\"character1_id\", jsonData.id);",
+									"    console.log(\"Character 1 ID saved:\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user1_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"BraveWarrior\",\n  \"classId\": \"{{warrior_class_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{character_service_url}}/api/character",
+							"host": [
+								"{{character_service_url}}"
+							],
+							"path": [
+								"api",
+								"character"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Character 2 (User 2)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set(\"character2_id\", jsonData.id);",
+									"    console.log(\"Character 2 ID saved:\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user2_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"MightyWarrior\",\n  \"classId\": \"{{warrior_class_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{character_service_url}}/api/character",
+							"host": [
+								"{{character_service_url}}"
+							],
+							"path": [
+								"api",
+								"character"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Character 1 Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user1_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{character_service_url}}/api/character/{{character1_id}}",
+							"host": [
+								"{{character_service_url}}"
+							],
+							"path": [
+								"api",
+								"character",
+								"{{character1_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Character 2 Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user2_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{character_service_url}}/api/character/{{character2_id}}",
+							"host": [
+								"{{character_service_url}}"
+							],
+							"path": [
+								"api",
+								"character",
+								"{{character2_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Characters (GM)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{gm_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{character_service_url}}/api/characters",
+							"host": [
+								"{{character_service_url}}"
+							],
+							"path": [
+								"api",
+								"characters"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Combat Service",
+			"item": [
+				{
+					"name": "Create Duel (GM)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set(\"duel_id\", jsonData.id);",
+									"    console.log(\"Duel ID saved:\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{gm_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"challenger1Id\": \"{{character1_id}}\",\n  \"challenger2Id\": \"{{character2_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{combat_service_url}}/api/combat/duel",
+							"host": [
+								"{{combat_service_url}}"
+							],
+							"path": [
+								"api",
+								"combat",
+								"duel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Duel Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user1_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{combat_service_url}}/api/combat/duel/{{duel_id}}",
+							"host": [
+								"{{combat_service_url}}"
+							],
+							"path": [
+								"api",
+								"combat",
+								"duel",
+								"{{duel_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "User 1 - Attack",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user1_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{combat_service_url}}/api/combat/duel/{{duel_id}}/attack",
+							"host": [
+								"{{combat_service_url}}"
+							],
+							"path": [
+								"api",
+								"combat",
+								"duel",
+								"{{duel_id}}",
+								"attack"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "User 2 - Attack",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user2_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{combat_service_url}}/api/combat/duel/{{duel_id}}/attack",
+							"host": [
+								"{{combat_service_url}}"
+							],
+							"path": [
+								"api",
+								"combat",
+								"duel",
+								"{{duel_id}}",
+								"attack"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "User 1 - Cast Spell",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user1_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{combat_service_url}}/api/combat/duel/{{duel_id}}/cast",
+							"host": [
+								"{{combat_service_url}}"
+							],
+							"path": [
+								"api",
+								"combat",
+								"duel",
+								"{{duel_id}}",
+								"cast"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "User 2 - Cast Spell",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user2_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{combat_service_url}}/api/combat/duel/{{duel_id}}/cast",
+							"host": [
+								"{{combat_service_url}}"
+							],
+							"path": [
+								"api",
+								"combat",
+								"duel",
+								"{{duel_id}}",
+								"cast"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "User 1 - Heal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user1_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{combat_service_url}}/api/combat/duel/{{duel_id}}/heal",
+							"host": [
+								"{{combat_service_url}}"
+							],
+							"path": [
+								"api",
+								"combat",
+								"duel",
+								"{{duel_id}}",
+								"heal"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "User 2 - Heal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user2_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{combat_service_url}}/api/combat/duel/{{duel_id}}/heal",
+							"host": [
+								"{{combat_service_url}}"
+							],
+							"path": [
+								"api",
+								"combat",
+								"duel",
+								"{{duel_id}}",
+								"heal"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Duel Logs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user1_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{combat_service_url}}/api/combat/duel/{{duel_id}}/logs",
+							"host": [
+								"{{combat_service_url}}"
+							],
+							"path": [
+								"api",
+								"combat",
+								"duel",
+								"{{duel_id}}",
+								"logs"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
